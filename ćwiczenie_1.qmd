@@ -1,0 +1,150 @@
+---
+title: "Ćwiczenie_1: Model Prognoz O3 na podstawie danych airquality"
+author: "Daria Kokot 410230"
+format: html
+editor: visual
+code-block-bg: true
+code-block-border-left: "#31BAE9"
+highlight-style:
+  light: custom-light.theme
+  dark: custom-dark.theme
+---
+
+<style>
+  body {
+    background-color: #fcfaff; /* Light blue background */
+    font-family: Arial, sans-serif; /* Set a font */
+  }
+  code {
+    background-color: #f0f8ff; /* Light blue background for inline code */
+    color: #d63384; /* Pink text for inline code */
+    padding: 2px 4px; /* Padding around inline code */
+    border-radius: 3px; /* Rounded corners */
+  }
+</style>
+
+
+![Description of the image](ozone.webp)
+
+## Instalacja pakietów z konsoli
+
+```{r install-packages, echo=FALSE}
+# install.packages("dplyr")
+# install.packages("GGally")
+# install.packages("ggplot2")
+```
+
+## Załadowanie pakietów
+
+```{r}
+# Załadowanie pakietów
+library(dplyr)
+library(GGally)
+library(ggplot2)
+```
+
+## Wczytujemy dane
+
+Zmiana nazw kolumn na małe litery
+Przygotowujemy dane:
+- usuwamy brakujące wartości
+- usuwamy kolumnę day
+- zmiana zmiennej month na zmienną faktorową
+
+``` {r}
+colnames(airquality) <- tolower(colnames(airquality))
+air <- airquality |>
+  as_tibble() |>
+  na.omit() |> 
+  select(-day) |> 
+  mutate(month = factor(month)) 
+```
+
+## Sprawdzamy braki danych
+Sprawdzamy braki danych. Jeśli w wyniku pokazuje się tibble 1x5 wypełniona zerami, oznacza to, że nie ma braków danych. 
+Tak też jest i w tym przypadku
+
+
+```{r}
+air |> 
+  is.na() |> 
+  as_tibble() |> 
+  summarise_all(sum)
+```
+
+## Wizualizacja danych:: ggpairs
+
+```{r}
+#| echo: false
+ggpairs(air)
+```
+
+## Tworzenie modelu regresji liniowej z ozone jako zmienną zależną (uwzględniamy tylko zmienne niezależne)
+
+```{r}
+model <- lm(ozone ~ solar.r + wind + temp + month, data = air)
+```
+
+## Podsumowanie modelu
+
+
+```{r}
+#| echo: false
+summary(model)
+```
+
+## Prognozowanie
+Dostosujmy nasze dane aby były gotowe do prognozowania
+
+```{r}
+new_data <- data.frame(
+  solar.r = mean(air$solar.r),
+  wind = mean(air$wind),
+  temp = mean(air$temp),
+  month = factor(c(5))  # Naszym przykładowym miesiącem będzie maj
+)
+```
+
+## Dokonanie prognozy
+
+```{r}
+predictions <- predict(model, newdata = new_data)
+```
+
+ Wyświetlenie prognozy
+```{r}
+#| echo: false
+print(predictions)
+```
+
+## Prognozy miesięczne
+Przygotowanie danych do prognozowania dla każdego miesiąca
+
+```{r}
+months <- levels(air$month)
+predictions_monthly <- data.frame(month = months, prediction = NA)
+```
+
+## Przygotujemy dane dla każdego miesiąca
+
+```{r}
+for (i in 1:length(months)) {
+  new_data <- data.frame(
+    solar.r = mean(air$solar.r),
+    wind = mean(air$wind),
+    temp = mean(air$temp),
+    month = factor(months[i])
+  )
+  
+# Prognoza dla każdego miesiąca
+predictions_monthly$prediction[i] <- predict(model, newdata = new_data)
+}
+```
+
+## Wizualizacja prognoz miesięcznych
+
+```{r}
+ggplot(predictions_monthly, aes(x = month, y = prediction)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")
+``
