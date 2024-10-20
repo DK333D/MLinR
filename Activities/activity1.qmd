@@ -22,9 +22,8 @@ highlight-style:
     border-radius: 3px; /* Rounded corners */
   }
 </style>
-
-
-![Description of the image](ozone.webp)
+```
+![](ozone.webp)
 
 ## Instalacja pakietów z konsoli
 
@@ -143,8 +142,6 @@ predictions_monthly$prediction[i] <- predict(model, newdata = new_data)
 
 ## Wizualizacja prognoz miesięcznych
 
-```{r}
-ggplot(predictions_monthly, aes(x = month, y = prediction)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")
-``
+```{r} 
+ggplot(predictions_monthly, aes(x = month, y = prediction)) +   geom_bar(stat = "identity") +   labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")
+```
