@@ -10,7 +10,6 @@ highlight-style:
   dark: custom-dark.theme
 ---
 
-```{=html}
 <style>
   body {
     background-color: #fcfaff; /* Light blue background */
@@ -24,7 +23,7 @@ highlight-style:
   }
 </style>
 ```
-![Description of the image](ozone.webp)
+![](ozone.webp)
 
 ## Instalacja pakietów z konsoli
 
@@ -45,9 +44,13 @@ library(ggplot2)
 
 ## Wczytujemy dane
 
-Zmiana nazw kolumn na małe litery Przygotowujemy dane: - usuwamy brakujące wartości - usuwamy kolumnę day - zmiana zmiennej month na zmienną faktorową
+Zmiana nazw kolumn na małe litery
+Przygotowujemy dane:
+- usuwamy brakujące wartości
+- usuwamy kolumnę day
+- zmiana zmiennej month na zmienną faktorową
 
-```{r}
+``` {r}
 colnames(airquality) <- tolower(colnames(airquality))
 air <- airquality |>
   as_tibble() |>
@@ -57,8 +60,9 @@ air <- airquality |>
 ```
 
 ## Sprawdzamy braki danych
+Sprawdzamy braki danych. Jeśli w wyniku pokazuje się tibble 1x5 wypełniona zerami, oznacza to, że nie ma braków danych. 
+Tak też jest i w tym przypadku
 
-Sprawdzamy braki danych. Jeśli w wyniku pokazuje się tibble 1x5 wypełniona zerami, oznacza to, że nie ma braków danych. Tak też jest i w tym przypadku
 
 ```{r}
 air |> 
@@ -82,13 +86,13 @@ model <- lm(ozone ~ solar.r + wind + temp + month, data = air)
 
 ## Podsumowanie modelu
 
+
 ```{r}
 #| echo: false
 summary(model)
 ```
 
 ## Prognozowanie
-
 Dostosujmy nasze dane aby były gotowe do prognozowania
 
 ```{r}
@@ -106,15 +110,13 @@ new_data <- data.frame(
 predictions <- predict(model, newdata = new_data)
 ```
 
-Wyświetlenie prognozy
-
+ Wyświetlenie prognozy
 ```{r}
 #| echo: false
 print(predictions)
 ```
 
 ## Prognozy miesięczne
-
 Przygotowanie danych do prognozowania dla każdego miesiąca
 
 ```{r}
@@ -140,4 +142,6 @@ predictions_monthly$prediction[i] <- predict(model, newdata = new_data)
 
 ## Wizualizacja prognoz miesięcznych
 
-\``{r} ggplot(predictions_monthly, aes(x = month, y = prediction)) +   geom_bar(stat = "identity") +   labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")`
+```{r} 
+ggplot(predictions_monthly, aes(x = month, y = prediction)) +   geom_bar(stat = "identity") +   labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")
+```

@@ -48,3 +48,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# No need to track HTML files
+*.html
+
+# No need to track files
+activity*_files/
