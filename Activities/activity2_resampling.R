@@ -1,11 +1,11 @@
 # Wstęp do Ćwiczenia 2
 
 # Ćwiczenie 2 - materiały wstępne
-# W SEKCJI 2 znajduje się wykonanećwiczenie 2
+# W SEKCJI 2 znajduje się wykonane ćwiczenie 2
 
 ##### SEKCJA 1 #####
 
-# Przyjrzymy się danym mydata z pakietu openair(Carslaw and Ropkins 2012).
+# Przyjrzymy się danym mydata z pakietu openair (Carslaw and Ropkins 2012).
 # Na podstawie tego zbioru danych spróbujemy zbudować model klasyfikacji.
 # Będzie on przewidywał, czy stężenia ozonu było wysokie, czy było niskie.
 # Zanim zdefiniujemy co oznacza “wysokie” i “niskie” przyjrzymy się zestawowi
@@ -88,6 +88,10 @@ data_split <- initial_split(air, prop = 0.75, strata = ozone)
 train_data <- training(data_split)
 test_data <- testing(data_split)
 
+# Tworzenie zbiorów do kroswalidacji (5-krotna kroswalidacja)
+set.seed(222)
+cv_folds <- vfold_cv(train_data, v = 5, strata = ozone)
+
 # Definicja modelu regresji logistycznej
 logistic_model <- logistic_reg() |>
   set_engine("glm") |>
@@ -109,25 +113,33 @@ workflow_ozone <- workflow() |>
   add_recipe(recipe_ozone) |>
   add_model(logistic_model)
 
-# Trening modelu na danych treningowych
-fitted_model <- workflow_ozone |> fit(data = train_data)
+# Trening modelu z kroswalidacją
+set.seed(222)
+resampling_results <- workflow_ozone |>
+  fit_resamples(
+    resamples = cv_folds,
+    metrics = metric_set(accuracy, roc_auc),
+    control = control_resamples(save_pred = TRUE)
+  )
 
-# Predykcja na danych testowych
-predictions <- fitted_model |> predict(new_data = test_data, type = "prob")
+# Podsumowanie wyników kroswalidacji
+collect_metrics(resampling_results)
 
-# Ocenia jakość modelu
-metrics <- fitted_model |>
-  predict(new_data = test_data) |>
-  bind_cols(test_data) |>
-  metrics(truth = ozone, estimate = .pred_class)
+# Trening modelu na pełnych danych treningowych
+final_model <- workflow_ozone |>
+  last_fit(split = data_split)
 
-# Wyświetlenie wyników metryk
-metrics
+# Ocena modelu na danych testowych
+final_metrics <- final_model |>
+  collect_metrics()
+
+# Wyświetlenie wyników
+final_metrics
 
 
-# Czy zmienne date, wd, pm10, pm25, so2, co wnoszą coś do modelu ?
-# Zastanów się jakie role przypisać no2 i nox, ponieważ te dwa predyktory są z sobą mocno skorelowane.
+# Czy zmienne date, wd, pm10, pm25, so2, co wnoszą coś do modelu?
+# Zastanów się, jakie role przypisać no2 i nox, ponieważ te dwa predyktory są z sobą mocno skorelowane.
 # Czy stosować przekształcenia boxCox lub YeoJohnson - dla jakich zmiennych?
-# Czy normalizacja zmiennych numerycznych jest potrzebna ?
+# Czy normalizacja zmiennych numerycznych jest potrzebna?
 # Czy wyizolować z date podgrupy, które będą ważnymi predatorami.
 # Zastosuj: set.seed(222) do podziału danych na zbiory uczące i testowe.
