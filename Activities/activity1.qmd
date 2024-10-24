@@ -1,13 +1,19 @@
 ---
 title: "Ćwiczenie_1: Model Prognoz O3 na podstawie danych airquality"
 author: "Daria Kokot 410230"
-format: html
-editor: visual
-code-block-bg: true
-code-block-border-left: "#31BAE9"
-highlight-style:
-  light: custom-light.theme
-  dark: custom-dark.theme
+format: 
+    html:
+      code-block-bg: true
+      code-block-border-left: "#31BAE9"
+      self-contained: true 
+      highlight-style:
+        light: custom-light.theme
+        dark: custom-dark.theme
+execute: 
+  error: false
+  warning: false
+editor_options: 
+  chunk_output_type: console
 ---
 
 <style>
@@ -22,7 +28,7 @@ highlight-style:
     border-radius: 3px; /* Rounded corners */
   }
 </style>
-```
+
 ![](ozone.webp)
 
 ## Instalacja pakietów z konsoli
@@ -80,17 +86,29 @@ ggpairs(air)
 
 ## Tworzenie modelu regresji liniowej z ozone jako zmienną zależną (uwzględniamy tylko zmienne niezależne)
 
+zmienne objasniajace nie są istotne. 
+
 ```{r}
-model <- lm(ozone ~ solar.r + wind + temp + month, data = air)
+model <- lm(ozone ~ solar.r + wind * temp, data = air)
 ```
 
 ## Podsumowanie modelu
-
 
 ```{r}
 #| echo: false
 summary(model)
 ```
+
+```{r}
+model |> 
+  tidy() |> 
+  mutate(p_stars = signif_stars(p.value)) |> 
+  gt::gt() |> 
+  gt::fmt_number(n_sigfig = 3) |> 
+  gt::fmt_scientific(columns = p.value) |> 
+  gt::tab_header(title = "Parametry modelu regresji")
+```
+
 
 ## Prognozowanie
 Dostosujmy nasze dane aby były gotowe do prognozowania
@@ -145,3 +163,42 @@ predictions_monthly$prediction[i] <- predict(model, newdata = new_data)
 ```{r} 
 ggplot(predictions_monthly, aes(x = month, y = prediction)) +   geom_bar(stat = "identity") +   labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")
 ```
+
+
+```{r}
+library(yardstick)
+
+multi <- metric_set(mae, mape, rmse, rsq, rsq_trad)
+
+augment(model, newdata = air) |> 
+  group_by(month) |> 
+  multi(truth = ozone, estimate = .fitted) |> 
+  pivot_wider(names_from = .metric, values_from = .estimate) |> 
+  gt::gt() |> 
+  gt::fmt_number(n_sigfig = 3)
+```
+
+```{r}
+library(GGally)
+library(ggpubr)
+
+airp <- augment(model, newdata = air)
+airp |> 
+  ggplot(aes(x = ozone, y = .fitted)) +
+  geom_point(shape = 15, color = "darkgreen", size = 3) +  
+  geom_smooth(method = "lm", se = TRUE, color = "orange", linetype = "dashed", fill = "lightblue") +
+  facet_wrap(~month, scales = "free") +
+  stat_cor(label.y.npc = 0.85) +
+  stat_regline_equation(
+    aes(label =  after_stat(adj.rr.label)), 
+    label.y.npc = 1
+    ) +
+  labs(
+    title = "Porównanie: Rzeczywiste a Prognozowane Stężenie Ozonu",
+    subtitle = "Model regresji liniowej wielorakiej",
+    x = "Rzeczywiste stężenia ozonu [ug/m3]",
+    y = "Prognozowane stężenia ozonu [ug/m3]"
+  )
+```
+
+
