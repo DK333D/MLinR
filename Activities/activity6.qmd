@@ -1,0 +1,366 @@
+
+---
+title: "Ćwiczenie 6 - Model prognozowania poziomów stężeń O3"
+author: "Daria Kokot"
+date: "2024-10-17"
+format:
+  html:
+    code-fold: true
+---
+
+```{r}
+# Biblioteki
+library(tidymodels)
+library(GGally)
+library(openair)
+library(dplyr)
+library(ranger)
+library(rpart)
+library(glmnet)
+library(yardstick)
+library(vip)
+```
+
+### Ustaw tidymodel preference
+```{r}
+tidymodels_prefer()
+```
+
+### Przygotowanie danych
+```{r}
+# Extract data for the year 2002
+air_data <- mydata |> selectByDate(year = 2002)
+```
+
+# Usuń puste wiersze
+```{r}
+air_data <- air_data |> na.omit()
+```
+
+### Analiza korelacji
+```{r}
+# Zwizualizuj korelacje między zmiennymi
+air_data |> GGally::ggpairs()
+```
+
+### Wind Direction Transformation
+```{r}
+# Przekonwertuj kierunek wiatru do zmiennej kategorycznej
+air_data <- air_data |> mutate(
+    wd = cut(
+        wd,
+        breaks = 16,
+        labels = seq(1, 16)
+    )
+)
+```
+
+### Rozdzielenie danych
+```{r}
+set.seed(222)
+
+data_split <- initial_split(
+    data = air_data,
+    prop = 0.75,
+    strata = o3
+)
+
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+val_set <- validation_split(
+    data = train_data,
+    prop = 0.75,
+    strata = o3
+)
+```
+
+### Definicja modelu
+```{r}
+# Liniowy model regresji
+linear_model <- 
+    linear_reg(
+        penalty = tune(),
+        mixture = tune()
+    ) |> 
+    set_engine(
+        engine = "glmnet",  
+        num.threads = parallel::detectCores() - 1
+    ) |>
+    set_mode("regression")
+```
+
+### Model drzewa decyzyjnego
+```{r}
+decision_tree_model <- decision_tree(
+        cost_complexity = tune(),
+        tree_depth = tune(),
+        min_n = tune()
+    ) |>
+    set_engine(
+        engine = "rpart"
+    ) |>
+    set_mode("regression")
+
+```
+
+### Model lasu losowego
+```{r}
+random_forest_model <- rand_forest(
+    mtry = tune(),
+    trees = tune(),
+    min_n = tune()
+) |> 
+    set_engine(
+        engine = "ranger",
+        num.threads = parallel::detectCores() - 1,
+        importance = "impurity"
+    ) |>
+    set_mode("regression")
+```
+
+### Stwórz recipe dla regresji liniowej
+```{r}
+linear_recipe <- 
+    recipe(o3 ~ ., data = train_data) |>
+    update_role(date, pm10, pm25, new_role = "ID") |>
+    step_date(date, features = c("month")) |> 
+    step_time(date, features = c("hour")) |> 
+    step_rm(date) |> # remove date column
+    step_dummy(all_nominal_predictors()) |> 
+    step_zv(all_predictors()) |> 
+    step_impute_knn(all_predictors()) |> # imputation of missing values
+    step_corr(all_predictors(), threshold = 0.7)
+
+```
+
+### Stwórz recipe dla drzewa decyzyjnego
+```{r}
+decision_tree_recipe <- recipe(o3 ~ ., data = train_data) |>
+    update_role(date, pm10, pm25, new_role = "ID") |>
+    step_date(date, features = c("month")) |>
+    step_time(date, features = c("hour")) |>
+    step_rm(date)
+
+    
+decision_tree_recipe |>
+    prep() |>
+    bake(train_data) |>
+    glimpse()
+```
+
+### Stwórz recipe dla lasu losowego
+```{r}
+random_forest_recipe <- recipe(o3 ~ ., data = train_data) |>
+    update_role(date, pm10, pm25, new_role = "ID") |>
+    step_date(date, features = c("month")) |>
+    step_time(date, features = c("hour")) |>
+    step_rm(date) |>
+    step_zv(all_predictors()) |> 
+    step_impute_knn(all_predictors()) 
+    
+random_forest_recipe |>
+    prep() |>
+    bake(train_data) |>
+    glimpse()
+```
+
+### Workflow Setup
+```{r}
+linear_workflow <- workflow() |>
+    add_model(linear_model) |>
+    add_recipe(linear_recipe)
+
+decision_tree_workflow <- workflow() |>
+    add_model(decision_tree_model) |>
+    add_recipe(decision_tree_recipe)
+
+random_forest_workflow <- workflow() |>
+    add_model(random_forest_model) |>
+    add_recipe(random_forest_recipe)
+```
+### Grid Specification
+
+# Stwórz siatkę dla hiperparametrów regresji liniowej
+```{r}
+linear_grid <- grid_regular(
+    penalty(),
+    mixture(),
+    levels = 3
+)
+```
+
+# Stwórz siatkę dla hiperparametrów drzewa decyzyjnego
+```{r}
+decision_tree_grid <- grid_regular(
+    cost_complexity(),
+    tree_depth(),
+    min_n(),
+    levels = 3
+)
+```
+
+# Stwórz siatkę dla hiperparametrów lasu losowego
+```{r}
+random_forest_grid <- grid_regular(
+    mtry(range=c(1, 4)),
+    trees(),
+    min_n(),
+    levels = 3
+)
+```
+## Tuning 
+
+
+### Tuning modelu regresji liniowej
+
+```{r}
+linear_results <- linear_workflow |>
+    tune_grid(
+        resamples = val_set,
+        grid = linear_grid,
+        control = control_grid(save_pred = TRUE),
+        metrics = metric_set(mae)
+    )
+
+```
+### Tuning modelu drzewa decyzyjnego
+```{r}
+decision_tree_results <- decision_tree_workflow |>
+    tune_grid(
+        resamples = val_set,
+        grid = decision_tree_grid,
+        control = control_grid(save_pred = TRUE),
+        metrics = metric_set(mae)
+    )
+```
+
+### Tuning modelu lasu losowego
+```{r}
+random_forest_results <- random_forest_workflow |>
+    tune_grid(
+        resamples = val_set,
+        grid = random_forest_grid,
+        control = control_grid(save_pred = TRUE),
+        metrics = metric_set(mae)
+    )
+```
+
+```{r}
+# Zapisz wyniki do pliku
+save(linear_results, decision_tree_results, random_forest_results, file="Activity6.RData")
+```
+
+```{r}
+# Odczytaj zapisane wyniki
+load("Activity6.RData")
+```
+
+### Wyświetl najlepszy moel dla modelu regresji liniowej
+```{r}
+linear_top_models <- linear_results |>
+    show_best(metric="mae", n = Inf) |>
+    arrange(penalty) |>
+    mutate(mean = mean |> round(x = _, digits = 3))
+
+linear_top_models |> gt::gt()
+```
+
+# Wyświetl najlepszy moel dla modelu drzewa decyzyjnego
+```{r}
+decision_tree_top_models <- decision_tree_results |>
+    show_best(metric="mae", n = Inf) |>
+    arrange(tree_depth) |>
+    mutate(mean = mean |> round(x = _, digits = 3))
+
+decision_tree_top_models |> gt::gt()
+```
+
+# Wyświetl najlepszy moel dla modelu lasu losowego
+```{r}
+random_forest_top_models <- random_forest_results |>
+    show_best(metric="mae", n = Inf) |>
+    arrange(trees) |>
+    mutate(mean = mean |> round(x = _, digits = 3))
+
+random_forest_top_models |> gt::gt()
+```
+
+# Wybór najlepszych hiperparametrów 
+```{r}
+linear_best <- linear_results |> select_best()
+decision_tree_best <- decision_tree_results |> select_best()
+random_forest_best <- random_forest_results |> select_best()
+
+linear_results |>
+    show_best(metric = "mae", n = Inf) |>
+    filter(.config == linear_best$.config) |>
+    select(penalty, mixture, .metric, mean)
+
+decision_tree_results |>
+    show_best(metric = "mae", n = Inf) |>
+    filter(.config == decision_tree_best$.config) |>
+    select(cost_complexity, tree_depth, min_n, .metric, mean)
+
+random_forest_results |>
+    show_best(metric = "mae", n = Inf) |>
+    filter(.config == random_forest_best$.config) |>
+    select(mtry, trees, min_n, .metric, mean)
+```
+
+# Wybierz najlepsze modele
+```{r}
+linear_best_model <- linear_workflow |> finalize_workflow(linear_best)
+decision_tree_best_model <- decision_tree_workflow |> finalize_workflow(decision_tree_best)
+random_forest_best_model <- random_forest_workflow |> finalize_workflow(random_forest_best)
+```
+
+# Fit
+# Dopasuj najlepszy model regresji liniowej
+```{r}
+linear_fit <- linear_best_model |> last_fit(split = data_split)
+```
+
+# Dopasuj najlepszy model drzewa decyzyjnego
+```{r}
+decision_tree_fit <- decision_tree_best_model |> last_fit(split = data_split)
+```
+
+# Dopasuj najlepszy model lasu losowego
+```{r}
+random_forest_fit <- random_forest_best_model |> last_fit(split = data_split)
+```
+
+### Wykres ważności zmiennych dla regresji liniowej
+```{r}
+linear_fit |> extract_fit_parsnip() |> vip(num_features = 20) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    geom_boxplot(color = "#4B0082", fill = "#D8BFD8")
+```
+
+### Wykres ważności zmiennych dla drzewa decyzyjnego 
+```{r}
+decision_tree_fit |> extract_fit_parsnip() |> vip(num_features = 20) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    geom_boxplot(color = "#4B0082", fill = "#D8BFD8")
+```
+
+### Wykres ważności zmiennych dla lasu losowego
+```{r}
+random_forest_fit |> extract_fit_parsnip() |> vip(num_features = 20) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    geom_boxplot(color = "#4B0082", fill = "#D8BFD8")
+```
+
+
+### Porównaj metryki z wszystkich modeli
+```{r}
+bind_rows(
+    linear_fit |> collect_metrics() |> select(-.config) |> mutate(model = "linear_reg"),
+    decision_tree_fit |> collect_metrics() |> select(-.config) |> mutate(model = "decision_tree"),
+    random_forest_fit |> collect_metrics() |> select(-.config) |> mutate(model = "rand_forest")
+) |> knitr::kable(digits = 3)
+```

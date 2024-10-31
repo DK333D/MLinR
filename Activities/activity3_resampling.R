@@ -197,12 +197,3 @@ cv_metrics_logistic
 cv_metrics_rf
 bootstrap_metrics_logistic
 bootstrap_metrics_rf
-
-##### 3.4 Wnioski #####
-
-# WNIOSKI:
-
-# "1. Model lasu losowego wykazuje lepsze wyniki w zakresie dokładności (accuracy) oraz AUC niż regresja logistyczna, zarówno w kroswalidacji, jak i w bootstrappingu.\n"
-# "2. Metoda bootstrappingu dla obu modeli wydaje się dostarczać bardziej stabilne wyniki, jednak kroswalidacja pozwala na szybszą ocenę modelu.\n"
-# "3. Las losowy lepiej radzi sobie z bardziej złożonymi wzorcami w danych, podczas gdy regresja logistyczna może być mniej efektywna w obecności dużej liczby zmiennych.\n"
-# "4. W obu przypadkach bootstrap daje bardziej zmienne wyniki w porównaniu do kroswalidacji, co może wynikać z losowej natury tej metody."
