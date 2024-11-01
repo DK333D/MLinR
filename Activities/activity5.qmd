@@ -1,5 +1,5 @@
 ---
-title: "Ćwiczenie 3 - Dodanie regresji logistycznej"
+title: "Ćwiczenie 5"
 author: "Daria Kokot"
 date: "2024-10-17"
 format:
