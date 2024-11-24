@@ -145,3 +145,14 @@ predictions_monthly$prediction[i] <- predict(model, newdata = new_data)
 ```{r} 
 ggplot(predictions_monthly, aes(x = month, y = prediction)) +   geom_bar(stat = "identity") +   labs(title = "Prognozy O3 dla różnych miesięcy", x = "Miesiąc", y = "Prognozowana wartość O3")
 ```
+
+
+## Wnioski:
+Wnioski:
+1. Współczynnik determinacji R^2=0.6369 (skorygowany: 0.6122) wskazuje, że model tłumaczy około 63% zmienności w danych.
+2. Statystyki t-testów dla współczynników pokazują, że zmienne solar.r, wind, temp oraz niektóre miesiące (np. wrzesień - month9) są istotne statystycznie.
+3. Na wykresie słupkowym przedstawiona jest zmienność prognozowanych poziomów ozonu w zależności od miesiąca, dzięki czemu wyraźnie widać różnice między miesiącami, co wskazuje na ich wpływ na poziom O3.
+4. Miesiące są istotne statystycznie i mają wpływ na poziom ozonu
+5. Współczynniki dla temp i solar.r są dodatnie, co wskazuje, że ozon gromadzi się w cieplejszych i bardziej nasłonecznionych warunkach.
+6. Negatywny współczynnik dla wind wskazuje na związek z rozpraszaniem zanieczyszczeń.
+7. Usunięcie braków danych i odpowiednie przekształcenie zmiennych umożliwiło stworzenie rzetelnego modelu.

@@ -314,3 +314,12 @@ final_rf_model <- finalize_workflow(workflow_rf_tuned, best_rf_params)
 ```{r}
 best_rf_params
 ```
+1. Dane z ćwiczenia zostały skutecznie wstępnie przetworzone, usuwając brakujące wartości i przekształcając zmienne ilościowe na jakościowe, co umożliwiło dalszą analizę i modelowanie.
+
+2. Model regresji logistycznej osiągnął wysoką dokładność (accuracy = 0.907) oraz dobrą zgodność (kappa = 0.740), co wskazuje na jego użyteczność w klasyfikacji stężeń ozonu jako niskie lub wysokie.
+
+3. W porównaniu metod resamplingowych, las losowy uzyskał lepsze wyniki niż regresja logistyczna, szczególnie w miarach ROC AUC (0.969 dla CV i 0.967 dla bootstrappingu), wskazując na wyższą zdolność do klasyfikacji.
+
+4. Kroswalidacja i bootstrapping wykazały stabilność obu modeli, ale las losowy charakteryzował się nieco większą precyzją i wyższą wartością średniej dokładności (0.918 dla CV).
+
+5. Optymalizacja hiperparametrów modelu lasu losowego za pomocą tuningu wskazała, że najlepsze wyniki osiągnięto przy mtry = 5 i liczbie drzew = 50, co może zostać zastosowane w przyszłych analizach.

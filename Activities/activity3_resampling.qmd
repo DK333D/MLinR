@@ -269,3 +269,15 @@ cv_metrics_rf
 bootstrap_metrics_logistic
 bootstrap_metrics_rf
 ```
+
+
+#### Wnioski
+1. Model regresji logistycznej osiągnął wysoką dokładność (accuracy = 90,7%) i umiarkowaną wartość wskaźnika kappa (kappa = 0,74), co wskazuje na dobrą jakość klasyfikacji w zestawie testowym.
+
+2. Kroswalidacja wykazała stabilność modelu regresji logistycznej (accuracy = 89,9%, roc_auc = 95,5%) oraz modelu lasu losowego, który uzyskał wyższe wyniki (accuracy = 91,8%, roc_auc = 96,9%).
+
+3. Metoda bootstrap potwierdziła przewagę lasu losowego nad regresją logistyczną pod względem dokładności (91,7% vs. 89,7%) oraz zdolności do rozróżniania klas (roc_auc 96,7% vs. 95,4%).
+
+4. Przydzielenie równomiernego podziału danych względem kategorii zmiennej celu (strata = ozone) zapewniło lepszą reprezentatywność w treningu i testowaniu modelu.
+
+5. Użycie zaawansowanych technik resamplingu (kroswalidacja i bootstrap) umożliwiło rzetelną ocenę i porównanie modeli, wskazując na przewagę lasu losowego w klasyfikacji jakościowej zmiennej o3.
