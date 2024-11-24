@@ -364,3 +364,12 @@ bind_rows(
     random_forest_fit |> collect_metrics() |> select(-.config) |> mutate(model = "rand_forest")
 ) |> knitr::kable(digits = 3)
 ```
+
+### Wnioski
+1. Najlepszy model przewidujący stężenie ozonu (O3) to las losowy, który osiągnął najniższą wartość RMSE (3,098) i najwyższe R² (0,853).
+
+2. Drzewo decyzyjne również miało dobre wyniki, z RMSE 4,144 i R² 0,728, co czyni go drugim najlepszym modelem.
+
+3. Model regresji liniowej był najmniej efektywny, osiągając RMSE 5,799 i R² 0,469.
+
+4. Najważniejsze zmienne dla lasu losowego wskazują, że czynniki takie jak pyły zawieszone (PM10, PM25) i tlenki azotu (NOx, NO2) mają istotny wpływ na prognozowanie O3.
