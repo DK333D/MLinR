@@ -151,3 +151,14 @@ metrics <- fitted_model |>
 ```{r}
 metrics
 ```
+
+## Wnioski:
+1. Zmienna o3 (stężenie ozonu) ma średnią wartość 7.38 i duże zróżnicowanie (od 0 do 52).
+ 
+2. Występują brakujące wartości w zmiennych, m.in. o3 (263 braków), pm25 (618 braków), so2 (307 braków). Braki usunięto przed dalszym przetwarzaniem.
+
+3. Dokładność (accuracy): 90.7%
+
+4. Statystyka Kappa (kap): 0.740 (bardzo dobra zgodność).
+
+5. Model dobrze klasyfikuje obserwacje na zbiory Niskie i Wysokie, choć lepiej radzi sobie z klasą dominującą (Niskie).
